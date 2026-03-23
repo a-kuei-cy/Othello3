@@ -5,20 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>黑白棋 (奧賽羅) - 多模式版</title>
     <style>
-        /* 你原本的 CSS 樣式完全保留 */
         * { box-sizing: border-box; font-family: Arial, sans-serif; }
         body { display: flex; flex-direction: column; align-items: center; background-color: #f0f0f0; margin: 0; padding: 20px; }
-        h1 { color: #333; margin-bottom: 20px; }
+        h1 { color: #333; margin-bottom: 10px; text-align: center; }
+        
+        /* === 登入彈出視窗 (強制填寫) === */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; /* 確保它在最上層 */
+            backdrop-filter: blur(5px);
+        }
+        .login-box {
+            background: white; padding: 30px; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center;
+            width: 90%; max-width: 400px;
+        }
+        .login-box h2 { margin-top: 0; color: #1976D2; margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .input-group input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; transition: border-color 0.2s; }
+        .input-group input:focus { border-color: #2196F3; outline: none; }
+        #login-btn { width: 100%; padding: 14px; font-size: 18px; margin-top: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        #login-btn:hover { background-color: #388E3C; }
+
+        /* 玩家狀態顯示區 (取代原本的輸入框) */
+        .player-status {
+            background-color: #e3f2fd; padding: 10px 20px; border-radius: 20px; 
+            color: #1976D2; font-weight: bold; margin-bottom: 20px;
+            display: flex; gap: 15px; align-items: center; border: 2px solid #bbdefb;
+            font-size: 16px;
+        }
+        .edit-info-btn {
+            background: none; border: none; color: #666; cursor: pointer; text-decoration: underline; font-size: 14px; padding: 0;
+        }
+        .edit-info-btn:hover { color: #333; background: none; }
+
+        /* 其他原有樣式 */
         .mode-selector { background-color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .mode-btn { padding: 8px 16px; border: 2px solid #2196F3; background-color: white; color: #2196F3; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
         .mode-btn.active { background-color: #2196F3; color: white; }
         .mode-btn:hover { background-color: #e3f2fd; }
         .mode-btn.active:hover { background-color: #1976D2; }
+        
         .online-room { background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; display: none; gap: 10px; align-items: center; }
         .online-room input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 150px; }
         .online-room button { padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
         .online-room button:hover { background-color: #388E3C; }
         .room-info { margin-top: 10px; color: #666; font-size: 14px; }
+        
         .game-container { display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
         .board { display: grid; grid-template-columns: repeat(8, 60px); grid-template-rows: repeat(8, 60px); gap: 2px; background-color: #669966; padding: 5px; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
         .cell { width: 60px; height: 60px; background-color: #006400; border-radius: 3px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
@@ -28,22 +64,25 @@
         .white { background-color: #fff; border: 2px solid #ddd; }
         .valid { background-color: #4CAF50; }
         .valid::after { content: ''; width: 15px; height: 15px; border-radius: 50%; background-color: rgba(255,255,255,0.7); position: absolute; }
+        
         .game-info { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-width: 250px; }
         .score { display: flex; justify-content: space-between; margin: 15px 0; font-size: 18px; }
         .score-item { display: flex; align-items: center; gap: 8px; }
         .score-piece { width: 25px; height: 25px; border-radius: 50%; }
         .status { font-size: 20px; font-weight: bold; color: #333; margin: 20px 0; text-align: center; }
         .controls { display: flex; gap: 10px; justify-content: center; }
-        button { padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button { padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; border: none; }
         button:hover { background-color: #1976D2; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         .instructions { margin-top: 20px; font-size: 14px; color: #666; line-height: 1.5; }
+        
         .ranking-container { margin-top: 20px; width: 100%; max-width: 600px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .ranking-container h3 { text-align: center; margin-top: 0; }
         .ranking-container table { width: 100%; border-collapse: collapse; text-align: center; }
         .ranking-container th, .ranking-container td { padding: 8px; border: 1px solid #ddd; }
         .ranking-container th { background: #f5f5f5; }
         #refresh-ranking { margin-top: 10px; width: 100%; padding: 8px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        
         @media (max-width: 768px) {
             .board { grid-template-columns: repeat(8, 40px); grid-template-rows: repeat(8, 40px); }
             .cell { width: 40px; height: 40px; }
@@ -52,7 +91,34 @@
     </style>
 </head>
 <body>
+
+    <!-- 🌟 強制登入視窗 🌟 -->
+    <div id="login-overlay" class="overlay">
+        <div class="login-box">
+            <h2>🎮 歡迎來到黑白棋</h2>
+            <p style="color:#666; margin-bottom: 20px; font-size: 14px;">請先填寫基本資料才能開始遊戲！</p>
+            
+            <div class="input-group">
+                <label>🏫 班級：</label>
+                <!-- 這裡將 placeholder 修改為「例如301」 -->
+                <input type="text" id="login-class" placeholder="例如301">
+            </div>
+            <div class="input-group">
+                <label>👤 姓名：</label>
+                <input type="text" id="login-name" placeholder="請輸入真實姓名">
+            </div>
+            
+            <button id="login-btn">開始遊戲</button>
+        </div>
+    </div>
+
     <h1>黑白棋 (奧賽羅)</h1>
+
+    <!-- 顯示目前玩家資訊區 -->
+    <div class="player-status" id="player-status-display" style="display: none;">
+        <span>👤 目前玩家：<span id="display-class"></span> - <span id="display-name"></span></span>
+        <button class="edit-info-btn" id="edit-info-btn">(修改資料)</button>
+    </div>
     
     <!-- 模式選擇區 -->
     <div class="mode-selector">
@@ -103,18 +169,19 @@
     
     <!-- 排行榜區域 -->
     <div class="ranking-container">
-        <h3>黑白棋排行榜 TOP10</h3>
+        <h3>🏆 黑白棋風雲榜 TOP10</h3>
         <table>
             <thead>
                 <tr>
                     <th>排名</th>
-                    <th>玩家ID</th>
+                    <th>班級</th>
+                    <th>姓名</th>
                     <th>分數</th>
                     <th>時間</th>
                 </tr>
             </thead>
             <tbody id="ranking-body">
-                <tr><td colspan="4">載入中...</td></tr>
+                <tr><td colspan="5">載入中...</td></tr>
             </tbody>
         </table>
         <button id="refresh-ranking">刷新排行榜</button>
@@ -122,144 +189,145 @@
 
     <script>
         // ====================== 1. 遊戲基礎設定與變數 ======================
-        const EMPTY = 0;
-        const BLACK = 1;
-        const WHITE = 2;
-        // 八個方向：上、下、左、右、四個斜角
-        const DIRECTIONS = [
-            [-1, -1], [-1, 0], [-1, 1],
-            [0, -1],           [0, 1],
-            [1, -1],  [1, 0],  [1, 1]
-        ];
+        const EMPTY = 0, BLACK = 1, WHITE = 2;
+        const DIRECTIONS = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
 
-        // 遊戲狀態
         let board = Array(8).fill().map(() => Array(8).fill(EMPTY));
         let currentPlayer = BLACK;
         let gameOver = false;
-        let currentMode = "ai"; // 'ai', 'local', 'online'
+        let currentMode = "ai"; 
         
-        // 🌟 請在這裡填入你部署好的 Google Apps Script URL！
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyw92MKYO6USBzjTrYVUJfEmHr0o_UAM-FgFRcjmVovOi49dYra5BsrcoguTZrRW_vE/exec"; 
+        // 🌟 請換成你最新發布的 GAS 網址！
+        const GAS_URL = "https://script.google.com/macros/s/你的專屬網址/exec"; 
         
-        // 線上對戰狀態
-        let playerId = "player_" + Math.random().toString(36).substr(2, 6);
+        // 玩家資料變數
+        let currentUserClass = "";
+        let currentUserName = "";
+
+        // 系統連線用變數
+        let systemPlayerId = "player_" + Math.random().toString(36).substr(2, 6);
         let currentRoomId = "";
-        let playerRole = ""; // 'black' 或 'white'
+        let playerRole = ""; 
         let pollInterval = null;
 
-        // ====================== 2. 核心遊戲邏輯 ======================
-        // 初始化棋盤（中心四顆棋子）
+        // ====================== 2. 登入系統邏輯 ======================
+        // 檢查是否有儲存過的資料
+        window.onload = () => {
+            const savedClass = localStorage.getItem('othello_class');
+            const savedName = localStorage.getItem('othello_name');
+            if (savedClass && savedName) {
+                document.getElementById('login-class').value = savedClass;
+                document.getElementById('login-name').value = savedName;
+            }
+            // 載入時先拉排行榜，但遊戲不初始化，直到登入
+            loadRanking();
+        };
+
+        // 登入按鈕點擊事件
+        document.getElementById('login-btn').onclick = () => {
+            const pClass = document.getElementById('login-class').value.trim();
+            const pName = document.getElementById('login-name').value.trim();
+
+            if (!pClass || !pName) {
+                alert("請務必填寫「班級」和「姓名」才能遊玩！");
+                return;
+            }
+
+            // 儲存至全域變數與本地端(localStorage)
+            currentUserClass = pClass;
+            currentUserName = pName;
+            localStorage.setItem('othello_class', pClass);
+            localStorage.setItem('othello_name', pName);
+
+            // 更新畫面並隱藏視窗
+            document.getElementById('display-class').innerText = currentUserClass;
+            document.getElementById('display-name').innerText = currentUserName;
+            document.getElementById('player-status-display').style.display = 'flex';
+            document.getElementById('login-overlay').style.display = 'none';
+
+            // 正式初始化遊戲
+            initGame();
+        };
+
+        // 修改資料按鈕
+        document.getElementById('edit-info-btn').onclick = () => {
+            document.getElementById('login-overlay').style.display = 'flex';
+        };
+
+        // ====================== 3. 核心遊戲邏輯 ======================
         function initGame() {
             board = Array(8).fill().map(() => Array(8).fill(EMPTY));
             board[3][3] = WHITE; board[3][4] = BLACK;
             board[4][3] = BLACK; board[4][4] = WHITE;
             currentPlayer = BLACK;
             gameOver = false;
-            
-            if (currentMode === 'online') {
-                document.getElementById('restart-btn').disabled = true;
-            } else {
-                document.getElementById('restart-btn').disabled = false;
-            }
-            
+            document.getElementById('restart-btn').disabled = (currentMode === 'online');
             updateUI();
         }
 
-        // 檢查該位置是否可以落子，若可以，回傳需要翻轉的棋子座標列表
         function getFlippablePieces(row, col, player) {
             if (board[row][col] !== EMPTY) return [];
-            
             let flippable = [];
             let opponent = (player === BLACK) ? WHITE : BLACK;
 
-            // 檢查 8 個方向
             for (let [dx, dy] of DIRECTIONS) {
-                let r = row + dx;
-                let c = col + dy;
-                let tempFlippable = [];
-
-                // 沿著方向找對手的棋子
+                let r = row + dx, c = col + dy, temp = [];
                 while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === opponent) {
-                    tempFlippable.push({r, c});
-                    r += dx;
-                    c += dy;
+                    temp.push({r, c});
+                    r += dx; c += dy;
                 }
-
-                // 如果最後碰到自己的棋子，代表中間的對手棋子都可以翻轉
-                if (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === player && tempFlippable.length > 0) {
-                    flippable = flippable.concat(tempFlippable);
+                if (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === player && temp.length > 0) {
+                    flippable = flippable.concat(temp);
                 }
             }
             return flippable;
         }
 
-        // 取得所有當前玩家可以落子的合法位置
         function getValidMoves(player) {
             let moves = [];
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
-                    if (getFlippablePieces(r, c, player).length > 0) {
-                        moves.push({r, c});
-                    }
+                    if (getFlippablePieces(r, c, player).length > 0) moves.push({r, c});
                 }
             }
             return moves;
         }
 
-        // 執行落子與翻轉
         function makeMove(row, col) {
             const flippable = getFlippablePieces(row, col, currentPlayer);
             if (flippable.length === 0) return false;
-
-            // 落子
             board[row][col] = currentPlayer;
-            // 翻轉
-            flippable.forEach(p => {
-                board[p.r][p.c] = currentPlayer;
-            });
-
+            flippable.forEach(p => board[p.r][p.c] = currentPlayer);
             return true;
         }
 
-        // ====================== 3. 畫面渲染與互動 ======================
-        // 更新整個畫面
         function updateUI() {
             const boardEl = document.getElementById('board');
             boardEl.innerHTML = '';
             
-            let blackCount = 0;
-            let whiteCount = 0;
+            let blackCount = 0, whiteCount = 0;
             const validMoves = gameOver ? [] : getValidMoves(currentPlayer);
-
-            // 判斷是否是我方回合（用於線上模式及人機模式鎖定點擊）
             const isMyTurn = checkIsMyTurn();
 
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
-                    
-                    // 計算分數
                     if (board[r][c] === BLACK) blackCount++;
                     if (board[r][c] === WHITE) whiteCount++;
 
-                    // 放置棋子
                     if (board[r][c] !== EMPTY) {
                         const piece = document.createElement('div');
                         piece.className = 'piece ' + (board[r][c] === BLACK ? 'black' : 'white');
                         cell.appendChild(piece);
-                    } 
-                    // 標示合法落子點
-                    else if (isMyTurn && validMoves.some(m => m.r === r && m.c === c)) {
+                    } else if (isMyTurn && validMoves.some(m => m.r === r && m.c === c)) {
                         cell.classList.add('valid');
                         cell.onclick = () => handleCellClick(r, c);
                     }
-
                     boardEl.appendChild(cell);
                 }
             }
 
-            // 更新分數與狀態
             document.getElementById('black-score').innerText = blackCount;
             document.getElementById('white-score').innerText = whiteCount;
 
@@ -270,48 +338,34 @@
                 else statusEl.innerText = "平局！🤝";
             } else {
                 let turnText = currentPlayer === BLACK ? "黑棋回合 (●)" : "白棋回合 (○)";
-                if (currentMode === 'online') {
-                    turnText += isMyTurn ? " - 輪到你了！" : " - 等待對手中...";
-                }
+                if (currentMode === 'online') turnText += isMyTurn ? " - 輪到你了！" : " - 等待對手...";
                 statusEl.innerText = turnText;
             }
         }
 
-        // 檢查現在是不是當前玩家可以操作
         function checkIsMyTurn() {
             if (gameOver) return false;
-            if (currentMode === 'ai' && currentPlayer === WHITE) return false; // 電腦回合
-            if (currentMode === 'online') {
-                const myColorNum = playerRole === 'black' ? BLACK : WHITE;
-                return currentPlayer === myColorNum;
-            }
-            return true; // local 模式雙方都可以點
+            if (currentMode === 'ai' && currentPlayer === WHITE) return false; 
+            if (currentMode === 'online') return currentPlayer === (playerRole === 'black' ? BLACK : WHITE);
+            return true; 
         }
 
-        // 處理玩家點擊格子
         async function handleCellClick(row, col) {
             if (!checkIsMyTurn()) return;
-
             if (makeMove(row, col)) {
                 updateUI();
                 await finalizeTurn();
             }
         }
 
-        // 完成回合：切換玩家、檢查跳過回合或遊戲結束，並觸發 AI 或網路同步
         async function finalizeTurn() {
             currentPlayer = (currentPlayer === BLACK) ? WHITE : BLACK;
-            
-            // 檢查下一位玩家是否有合法步
             let nextMoves = getValidMoves(currentPlayer);
             
             if (nextMoves.length === 0) {
-                // 如果下一位玩家沒步可走，換回原來的玩家
                 currentPlayer = (currentPlayer === BLACK) ? WHITE : BLACK;
                 nextMoves = getValidMoves(currentPlayer);
-                
                 if (nextMoves.length === 0) {
-                    // 雙方都沒步可走 -> 遊戲結束
                     gameOver = true;
                     updateUI();
                     handleGameOver();
@@ -319,60 +373,34 @@
                     alert((currentPlayer === BLACK ? "白棋" : "黑棋") + " 無法落子，跳過回合！");
                 }
             }
-
             updateUI();
 
-            // 如果是線上對戰，送出最新棋盤狀態
             if (currentMode === 'online') {
-                await apiCall('updateBoard', {
-                    roomId: currentRoomId,
-                    boardData: board,
-                    currentPlayer: currentPlayer
-                });
-            }
-            // 如果是人機對戰且輪到電腦，觸發 AI
-            else if (currentMode === 'ai' && currentPlayer === WHITE && !gameOver) {
-                setTimeout(makeAIMove, 800); // 稍微延遲讓玩家看清楚
+                await apiCall('updateBoard', { roomId: currentRoomId, boardData: board, currentPlayer });
+            } else if (currentMode === 'ai' && currentPlayer === WHITE && !gameOver) {
+                setTimeout(makeAIMove, 800); 
             }
         }
 
-        // ====================== 4. AI 演算法 ======================
-        // 簡單的貪心演算法：優先佔領角落，否則選翻轉最多顆的
         function makeAIMove() {
             const validMoves = getValidMoves(WHITE);
             if (validMoves.length === 0) return;
-
-            let bestMove = null;
-            let maxScore = -1;
-
-            // 角落座標
+            let bestMove = null, maxScore = -1;
             const corners = [{r:0,c:0}, {r:0,c:7}, {r:7,c:0}, {r:7,c:7}];
 
             for (let move of validMoves) {
                 const isCorner = corners.some(c => c.r === move.r && c.c === move.c);
                 const flippedCount = getFlippablePieces(move.r, move.c, WHITE).length;
-                
-                // 角落權重極高
                 let moveScore = isCorner ? 1000 + flippedCount : flippedCount;
-                
-                if (moveScore > maxScore) {
-                    maxScore = moveScore;
-                    bestMove = move;
-                }
+                if (moveScore > maxScore) { maxScore = moveScore; bestMove = move; }
             }
 
-            if (bestMove) {
-                makeMove(bestMove.r, bestMove.c);
-                finalizeTurn();
-            }
+            if (bestMove) { makeMove(bestMove.r, bestMove.c); finalizeTurn(); }
         }
 
-        // ====================== 5. 網路與 API 串接 ======================
-        // 共用 API 呼叫函式
         async function apiCall(action, params = {}) {
             try {
                 const payload = { action: action, ...params };
-                // 為了避免 GAS 的 CORS 問題，使用 text/plain 發送
                 const response = await fetch(GAS_URL, {
                     method: "POST",
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -385,73 +413,7 @@
             }
         }
 
-        // 建立房間
-        document.getElementById('create-room-btn').onclick = async () => {
-            document.getElementById('room-info').innerText = "建立房間中...";
-            const res = await apiCall('createRoom', { playerId });
-            if (res.success) {
-                currentRoomId = res.roomId;
-                playerRole = res.playerRole; // black
-                document.getElementById('room-info').innerText = `房間建立成功！房間號碼：${currentRoomId} (你是黑棋)`;
-                startPolling();
-                initGame();
-            } else {
-                alert(res.msg);
-            }
-        };
-
-        // 加入房間
-        document.getElementById('join-room-btn').onclick = async () => {
-            const roomId = document.getElementById('room-id-input').value.trim();
-            if (!roomId) return alert("請輸入房間號");
-            
-            document.getElementById('room-info').innerText = "加入房間中...";
-            const res = await apiCall('joinRoom', { roomId, playerId });
-            if (res.success) {
-                currentRoomId = roomId;
-                playerRole = res.playerRole; // white
-                document.getElementById('room-info').innerText = `加入成功！房間號碼：${currentRoomId} (你是白棋)`;
-                startPolling();
-            } else {
-                alert(res.msg);
-                document.getElementById('room-info').innerText = "";
-            }
-        };
-
-        // 定期輪詢伺服器獲取對手動作
-        function startPolling() {
-            if (pollInterval) clearInterval(pollInterval);
-            pollInterval = setInterval(async () => {
-                if (!currentRoomId) return;
-                
-                const res = await apiCall('getRoomData', { roomId: currentRoomId });
-                if (res.success) {
-                    // 更新本地狀態
-                    const newBoardStr = JSON.stringify(res.boardData);
-                    const oldBoardStr = JSON.stringify(board);
-                    
-                    // 如果伺服器狀態與本地不同，更新畫面
-                    if (newBoardStr !== oldBoardStr || currentPlayer !== res.roomData.currentPlayer) {
-                        board = res.boardData;
-                        currentPlayer = res.roomData.currentPlayer;
-                        
-                        // 檢查是否遊戲結束
-                        if (getValidMoves(BLACK).length === 0 && getValidMoves(WHITE).length === 0) {
-                            gameOver = true;
-                            handleGameOver();
-                        }
-                        updateUI();
-                    }
-                    
-                    // 更新等待狀態顯示
-                    if (!res.roomData.player2) {
-                        document.getElementById('status').innerText = "等待對手加入中...";
-                    }
-                }
-            }, 2000); // 每 2 秒抓一次
-        }
-
-        // 遊戲結束處理（上傳分數）
+        // ====================== 4. 遊戲結束與排行榜處理 ======================
         async function handleGameOver() {
             let blackCount = 0, whiteCount = 0;
             for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
@@ -459,24 +421,33 @@
                 if (board[r][c]===WHITE) whiteCount++;
             }
             
-            // 計算我方的分數並上傳 (防作弊機制這裡為了簡單先簡化)
             let myScore = 0;
             if (currentMode === 'ai' || currentMode === 'local') {
-                myScore = Math.max(blackCount, whiteCount); // 隨意上傳最高分
+                myScore = Math.max(blackCount, whiteCount); 
             } else if (currentMode === 'online') {
                 myScore = playerRole === 'black' ? blackCount : whiteCount;
             }
 
             if (myScore > 0) {
-                await apiCall('submitScore', { playerId, score: myScore });
-                loadRanking(); // 刷新排行榜
+                // 直接使用登入時填寫的資料上傳，不再跳出詢問框
+                submitPlayerScore(currentUserClass, currentUserName, myScore);
             }
         }
 
-        // 載入排行榜
+        async function submitPlayerScore(pClass, pName, score) {
+            document.getElementById('status').innerText = "上傳分數中...";
+            const res = await apiCall('submitScore', { playerClass: pClass, playerName: pName, score: score });
+            if (res.success) {
+                loadRanking(); // 上傳成功自動重整排行榜
+            } else {
+                console.error("成績登錄失敗：" + res.msg);
+            }
+            updateUI(); // 恢復勝利訊息
+        }
+
         async function loadRanking() {
             const tbody = document.getElementById('ranking-body');
-            tbody.innerHTML = '<tr><td colspan="4">載入中...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5">載入中...</td></tr>';
             
             const res = await apiCall('getTop10');
             if (res.success && res.ranking.length > 0) {
@@ -485,46 +456,86 @@
                     tbody.innerHTML += `
                         <tr>
                             <td>${r.rank}</td>
-                            <td>${r.playerId}</td>
+                            <td>${r.playerClass}</td>
+                            <td>${r.playerName}</td>
                             <td>${r.score}</td>
                             <td>${new Date(r.time).toLocaleDateString()}</td>
                         </tr>
                     `;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="4">暫無資料</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5">暫無資料</td></tr>';
             }
         }
         document.getElementById('refresh-ranking').onclick = loadRanking;
 
-        // ====================== 6. UI 事件與初始化 ======================
+        // ====================== 5. 網路房間控制與介面切換 ======================
+        document.getElementById('create-room-btn').onclick = async () => {
+            document.getElementById('room-info').innerText = "建立房間中...";
+            const res = await apiCall('createRoom', { playerId: systemPlayerId });
+            if (res.success) {
+                currentRoomId = res.roomId;
+                playerRole = res.playerRole; 
+                document.getElementById('room-info').innerText = `房間建立成功！房間號碼：${currentRoomId} (你是黑棋)`;
+                startPolling(); initGame();
+            } else alert(res.msg);
+        };
+
+        document.getElementById('join-room-btn').onclick = async () => {
+            const roomId = document.getElementById('room-id-input').value.trim();
+            if (!roomId) return alert("請輸入房間號");
+            
+            document.getElementById('room-info').innerText = "加入房間中...";
+            const res = await apiCall('joinRoom', { roomId, playerId: systemPlayerId });
+            if (res.success) {
+                currentRoomId = roomId; playerRole = res.playerRole; 
+                document.getElementById('room-info').innerText = `加入成功！房間號碼：${currentRoomId} (你是白棋)`;
+                startPolling();
+            } else {
+                alert(res.msg); document.getElementById('room-info').innerText = "";
+            }
+        };
+
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(async () => {
+                if (!currentRoomId) return;
+                const res = await apiCall('getRoomData', { roomId: currentRoomId });
+                if (res.success) {
+                    const newBoardStr = JSON.stringify(res.boardData);
+                    if (newBoardStr !== JSON.stringify(board) || currentPlayer !== res.roomData.currentPlayer) {
+                        board = res.boardData; currentPlayer = res.roomData.currentPlayer;
+                        if (getValidMoves(BLACK).length === 0 && getValidMoves(WHITE).length === 0) {
+                            gameOver = true; handleGameOver();
+                        }
+                        updateUI();
+                    }
+                    if (!res.roomData.player2) document.getElementById('status').innerText = "等待對手加入中...";
+                }
+            }, 2000); 
+        }
+
         // 模式切換
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.onclick = (e) => {
-                // 更新按鈕樣式
                 document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
-                
-                // 設定模式
                 currentMode = e.target.dataset.mode;
                 
-                // 更新介面
                 const tips = document.getElementById('mode-tips');
                 const onlineRoom = document.getElementById('online-room');
-                if (pollInterval) clearInterval(pollInterval); // 停止輪詢
+                if (pollInterval) clearInterval(pollInterval); 
 
                 if (currentMode === 'ai') {
                     tips.innerText = "人機對戰：你操控黑棋，電腦操控白棋";
-                    onlineRoom.style.display = 'none';
-                    initGame();
+                    onlineRoom.style.display = 'none'; initGame();
                 } else if (currentMode === 'local') {
                     tips.innerText = "本機對戰：與身旁的朋友一起玩";
-                    onlineRoom.style.display = 'none';
-                    initGame();
+                    onlineRoom.style.display = 'none'; initGame();
                 } else if (currentMode === 'online') {
                     tips.innerText = "跨裝置對戰：建立房間邀請朋友加入";
                     onlineRoom.style.display = 'flex';
-                    board = Array(8).fill().map(() => Array(8).fill(EMPTY)); // 清空棋盤等連線
+                    board = Array(8).fill().map(() => Array(8).fill(EMPTY)); 
                     document.getElementById('status').innerText = "請先建立或加入房間";
                     updateUI();
                 }
@@ -532,10 +543,6 @@
         });
 
         document.getElementById('restart-btn').onclick = initGame;
-
-        // 啟動遊戲
-        initGame();
-        loadRanking(); // 初始載入排行榜
 
     </script>
 </body>
