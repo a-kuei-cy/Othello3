@@ -14,7 +14,7 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.7);
             display: flex; justify-content: center; align-items: center;
-            z-index: 1000; /* 確保它在最上層 */
+            z-index: 1000;
             backdrop-filter: blur(5px);
         }
         .login-box {
@@ -30,7 +30,7 @@
         #login-btn { width: 100%; padding: 14px; font-size: 18px; margin-top: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         #login-btn:hover { background-color: #388E3C; }
 
-        /* 玩家狀態顯示區 (取代原本的輸入框) */
+        /* 玩家狀態顯示區 */
         .player-status {
             background-color: #e3f2fd; padding: 10px 20px; border-radius: 20px; 
             color: #1976D2; font-weight: bold; margin-bottom: 20px;
@@ -42,7 +42,7 @@
         }
         .edit-info-btn:hover { color: #333; background: none; }
 
-        /* 其他原有樣式 */
+        /* 模式選擇區 */
         .mode-selector { background-color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .mode-btn { padding: 8px 16px; border: 2px solid #2196F3; background-color: white; color: #2196F3; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
         .mode-btn.active { background-color: #2196F3; color: white; }
@@ -92,42 +92,36 @@
 </head>
 <body>
 
-    <!-- 🌟 強制登入視窗 🌟 -->
+    <!-- 強制登入視窗 -->
     <div id="login-overlay" class="overlay">
         <div class="login-box">
             <h2>🎮 歡迎來到黑白棋</h2>
             <p style="color:#666; margin-bottom: 20px; font-size: 14px;">請先填寫基本資料才能開始遊戲！</p>
-            
             <div class="input-group">
                 <label>🏫 班級：</label>
-                <!-- 這裡將 placeholder 修改為「例如301」 -->
                 <input type="text" id="login-class" placeholder="例如301">
             </div>
             <div class="input-group">
                 <label>👤 姓名：</label>
                 <input type="text" id="login-name" placeholder="請輸入真實姓名">
             </div>
-            
             <button id="login-btn">開始遊戲</button>
         </div>
     </div>
 
     <h1>黑白棋 (奧賽羅)</h1>
 
-    <!-- 顯示目前玩家資訊區 -->
     <div class="player-status" id="player-status-display" style="display: none;">
         <span>👤 目前玩家：<span id="display-class"></span> - <span id="display-name"></span></span>
         <button class="edit-info-btn" id="edit-info-btn">(修改資料)</button>
     </div>
     
-    <!-- 模式選擇區 -->
     <div class="mode-selector">
         <button class="mode-btn active" data-mode="ai">人機對戰</button>
         <button class="mode-btn" data-mode="local">本機雙人對戰</button>
         <button class="mode-btn" data-mode="online">跨裝置對戰</button>
     </div>
     
-    <!-- 線上房間區 -->
     <div class="online-room" id="online-room">
         <button id="create-room-btn">建立房間</button>
         <input type="text" id="room-id-input" placeholder="輸入房間號">
@@ -135,10 +129,8 @@
         <div class="room-info" id="room-info"></div>
     </div>
     
-    <!-- 遊戲容器 -->
     <div class="game-container">
         <div class="board" id="board"></div>
-        
         <div class="game-info">
             <div class="score">
                 <div class="score-item">
@@ -150,13 +142,10 @@
                     <span>白棋: <span id="white-score">2</span></span>
                 </div>
             </div>
-            
             <div class="status" id="status">黑棋回合 (●)</div>
-            
             <div class="controls">
                 <button id="restart-btn">重新開始</button>
             </div>
-            
             <div class="instructions">
                 <p id="mode-tips">人機對戰：你操控黑棋，電腦操控白棋</p>
                 <p>規則：</p>
@@ -167,7 +156,6 @@
         </div>
     </div>
     
-    <!-- 排行榜區域 -->
     <div class="ranking-container">
         <h3>🏆 黑白棋風雲榜 TOP10</h3>
         <table>
@@ -176,7 +164,7 @@
                     <th>排名</th>
                     <th>班級</th>
                     <th>姓名</th>
-                    <th>分數</th>
+                    <th>最高分</th>
                     <th>時間</th>
                 </tr>
             </thead>
@@ -188,7 +176,6 @@
     </div>
 
     <script>
-        // ====================== 1. 遊戲基礎設定與變數 ======================
         const EMPTY = 0, BLACK = 1, WHITE = 2;
         const DIRECTIONS = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
 
@@ -197,21 +184,16 @@
         let gameOver = false;
         let currentMode = "ai"; 
         
-        // 🌟 請換成你最新發布的 GAS 網址！
+        // 你的專屬 GAS 網址
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyw92MKYO6USBzjTrYVUJfEmHr0o_UAM-FgFRcjmVovOi49dYra5BsrcoguTZrRW_vE/exec"; 
         
-        // 玩家資料變數
         let currentUserClass = "";
         let currentUserName = "";
-
-        // 系統連線用變數
         let systemPlayerId = "player_" + Math.random().toString(36).substr(2, 6);
         let currentRoomId = "";
         let playerRole = ""; 
         let pollInterval = null;
 
-        // ====================== 2. 登入系統邏輯 ======================
-        // 檢查是否有儲存過的資料
         window.onload = () => {
             const savedClass = localStorage.getItem('othello_class');
             const savedName = localStorage.getItem('othello_name');
@@ -219,11 +201,9 @@
                 document.getElementById('login-class').value = savedClass;
                 document.getElementById('login-name').value = savedName;
             }
-            // 載入時先拉排行榜，但遊戲不初始化，直到登入
             loadRanking();
         };
 
-        // 登入按鈕點擊事件
         document.getElementById('login-btn').onclick = () => {
             const pClass = document.getElementById('login-class').value.trim();
             const pName = document.getElementById('login-name').value.trim();
@@ -233,28 +213,23 @@
                 return;
             }
 
-            // 儲存至全域變數與本地端(localStorage)
             currentUserClass = pClass;
             currentUserName = pName;
             localStorage.setItem('othello_class', pClass);
             localStorage.setItem('othello_name', pName);
 
-            // 更新畫面並隱藏視窗
             document.getElementById('display-class').innerText = currentUserClass;
             document.getElementById('display-name').innerText = currentUserName;
             document.getElementById('player-status-display').style.display = 'flex';
             document.getElementById('login-overlay').style.display = 'none';
 
-            // 正式初始化遊戲
             initGame();
         };
 
-        // 修改資料按鈕
         document.getElementById('edit-info-btn').onclick = () => {
             document.getElementById('login-overlay').style.display = 'flex';
         };
 
-        // ====================== 3. 核心遊戲邏輯 ======================
         function initGame() {
             board = Array(8).fill().map(() => Array(8).fill(EMPTY));
             board[3][3] = WHITE; board[3][4] = BLACK;
@@ -263,6 +238,10 @@
             gameOver = false;
             document.getElementById('restart-btn').disabled = (currentMode === 'online');
             updateUI();
+
+            if (currentMode === 'online' && playerRole === 'black' && currentRoomId) {
+                apiCall('updateBoard', { roomId: currentRoomId, boardData: board, currentPlayer });
+            }
         }
 
         function getFlippablePieces(row, col, player) {
@@ -399,6 +378,11 @@
         }
 
         async function apiCall(action, params = {}) {
+            if (GAS_URL.includes("你的專屬網址")) {
+                console.warn("系統提示：尚未設定 GAS_URL。");
+                if (action === 'getTop10') return { success: true, ranking: [] };
+                return { success: false, msg: "請先設定真實的 GAS_URL" };
+            }
             try {
                 const payload = { action: action, ...params };
                 const response = await fetch(GAS_URL, {
@@ -406,14 +390,14 @@
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify(payload)
                 });
-                return await response.json();
+                const text = await response.text();
+                try { return JSON.parse(text); } 
+                catch (e) { return { success: false, msg: "伺服器回傳格式異常！" }; }
             } catch (error) {
-                console.error("API 錯誤:", error);
-                return { success: false, msg: "連線失敗，請檢查網路或 GAS_URL 設定" };
+                return { success: false, msg: "連線失敗" };
             }
         }
 
-        // ====================== 4. 遊戲結束與排行榜處理 ======================
         async function handleGameOver() {
             let blackCount = 0, whiteCount = 0;
             for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
@@ -429,7 +413,6 @@
             }
 
             if (myScore > 0) {
-                // 直接使用登入時填寫的資料上傳，不再跳出詢問框
                 submitPlayerScore(currentUserClass, currentUserName, myScore);
             }
         }
@@ -438,44 +421,64 @@
             document.getElementById('status').innerText = "上傳分數中...";
             const res = await apiCall('submitScore', { playerClass: pClass, playerName: pName, score: score });
             if (res.success) {
-                loadRanking(); // 上傳成功自動重整排行榜
-            } else {
-                console.error("成績登錄失敗：" + res.msg);
+                loadRanking(); 
             }
-            updateUI(); // 恢復勝利訊息
+            updateUI(); 
         }
 
+        // 🌟 更新重點：排行榜載入時過濾重複玩家
         async function loadRanking() {
             const tbody = document.getElementById('ranking-body');
             tbody.innerHTML = '<tr><td colspan="5">載入中...</td></tr>';
             
             const res = await apiCall('getTop10');
-            if (res.success && res.ranking.length > 0) {
-                tbody.innerHTML = '';
+            if (res.success && res.ranking && res.ranking.length > 0) {
+                
+                // 1. 使用 Map 來過濾重複的「班級+姓名」，只保留最高分
+                let uniquePlayers = new Map();
+                
                 res.ranking.forEach(r => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${r.rank}</td>
-                            <td>${r.playerClass}</td>
-                            <td>${r.playerName}</td>
-                            <td>${r.score}</td>
-                            <td>${new Date(r.time).toLocaleDateString()}</td>
-                        </tr>
-                    `;
+                    let key = r.playerClass + "-" + r.playerName;
+                    // 如果這個玩家還沒被記錄，或者新記錄的分數大於已記錄的分數，就覆蓋
+                    if (!uniquePlayers.has(key) || r.score > uniquePlayers.get(key).score) {
+                        uniquePlayers.set(key, r);
+                    }
                 });
+
+                // 2. 將 Map 轉回陣列，並依照分數由大到小重新排序
+                let finalRanking = Array.from(uniquePlayers.values())
+                                        .sort((a, b) => b.score - a.score)
+                                        .slice(0, 10); // 取前10名
+
+                // 3. 顯示在畫面上
+                if (finalRanking.length > 0) {
+                    tbody.innerHTML = '';
+                    finalRanking.forEach((r, index) => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${r.playerClass}</td>
+                                <td>${r.playerName}</td>
+                                <td>${r.score}</td>
+                                <td>${new Date(r.time).toLocaleDateString()}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5">暫無資料</td></tr>';
+                }
             } else {
-                tbody.innerHTML = '<tr><td colspan="5">暫無資料</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5">尚未設定資料庫或暫無資料</td></tr>';
             }
         }
         document.getElementById('refresh-ranking').onclick = loadRanking;
 
-        // ====================== 5. 網路房間控制與介面切換 ======================
         document.getElementById('create-room-btn').onclick = async () => {
             document.getElementById('room-info').innerText = "建立房間中...";
             const res = await apiCall('createRoom', { playerId: systemPlayerId });
             if (res.success) {
                 currentRoomId = res.roomId;
-                playerRole = res.playerRole; 
+                playerRole = res.playerRole || 'black'; 
                 document.getElementById('room-info').innerText = `房間建立成功！房間號碼：${currentRoomId} (你是黑棋)`;
                 startPolling(); initGame();
             } else alert(res.msg);
@@ -488,11 +491,13 @@
             document.getElementById('room-info').innerText = "加入房間中...";
             const res = await apiCall('joinRoom', { roomId, playerId: systemPlayerId });
             if (res.success) {
-                currentRoomId = roomId; playerRole = res.playerRole; 
+                currentRoomId = roomId; 
+                playerRole = res.playerRole || 'white'; 
                 document.getElementById('room-info').innerText = `加入成功！房間號碼：${currentRoomId} (你是白棋)`;
+                initGame();
                 startPolling();
             } else {
-                alert(res.msg); document.getElementById('room-info').innerText = "";
+                alert("加入失敗：" + res.msg); document.getElementById('room-info').innerText = "";
             }
         };
 
@@ -501,21 +506,28 @@
             pollInterval = setInterval(async () => {
                 if (!currentRoomId) return;
                 const res = await apiCall('getRoomData', { roomId: currentRoomId });
-                if (res.success) {
-                    const newBoardStr = JSON.stringify(res.boardData);
-                    if (newBoardStr !== JSON.stringify(board) || currentPlayer !== res.roomData.currentPlayer) {
-                        board = res.boardData; currentPlayer = res.roomData.currentPlayer;
-                        if (getValidMoves(BLACK).length === 0 && getValidMoves(WHITE).length === 0) {
-                            gameOver = true; handleGameOver();
-                        }
-                        updateUI();
+                if (res.success && res.boardData) {
+                    let serverBoard = res.boardData;
+                    if (typeof serverBoard === 'string') {
+                        try { serverBoard = JSON.parse(serverBoard); } catch(e){}
                     }
-                    if (!res.roomData.player2) document.getElementById('status').innerText = "等待對手加入中...";
+                    if (Array.isArray(serverBoard)) {
+                        const newBoardStr = JSON.stringify(serverBoard);
+                        if (newBoardStr !== JSON.stringify(board) || currentPlayer !== res.roomData.currentPlayer) {
+                            board = serverBoard; currentPlayer = res.roomData.currentPlayer;
+                            if (getValidMoves(BLACK).length === 0 && getValidMoves(WHITE).length === 0) {
+                                gameOver = true; handleGameOver();
+                            }
+                            updateUI();
+                        }
+                    }
+                    if (!res.roomData.player2) {
+                        document.getElementById('status').innerText = "等待對手加入中...";
+                    }
                 }
             }, 2000); 
         }
 
-        // 模式切換
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.onclick = (e) => {
                 document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
